@@ -1,16 +1,17 @@
 ﻿using Astras_PSA_Mod.Core.GUIHelpers;
+using Astras_PSA_Mod.Core.Other;
 using GorillaLocomotion;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UIElements;
 
 namespace Astras_PSA_Mod.Core;
 
 public class Main : MonoBehaviour
 {
-    private Rect Wrect = new Rect(250, 250, 220, 220);
+    private Rect Wrect = new Rect(155, 155, 360, 460);
     private bool Open = false;
     private bool InitStyles = false;
+    private bool dropdownOpen = false;
     private Texture2D? WTex, BTex, STex, STHTex;
     private GUIStyle? WStyle, BStyle, SStyle, STHStyle;
     private Color WindowColor = new Color(0.1f, 0.1f, 0.1f, 1f);
@@ -18,8 +19,7 @@ public class Main : MonoBehaviour
     private Color sliderTrackColor = new Color(0.15f, 0.15f, 0.15f, 1f);
     private Color sliderThumbColor = new Color(0.0f, 0.6f, 1f, 1f);
     private float Speed = 0f;
-    private float MexGroundDis = 0.5f;
-    private bool UseJoySticks = true;
+    private float MexGroundDis = 0.5f;    
     private bool PSAEnabled = false;
     private Vector3 velocity;
 
@@ -32,6 +32,7 @@ public class Main : MonoBehaviour
         }
         if (Open)
         {
+            Wrect.height = dropdownOpen ? 520 : 460;
             Wrect = GUILayout.Window(85674, Wrect, UIM, "Astras PSA Mod", WStyle);
         }
     }
@@ -48,7 +49,7 @@ public class Main : MonoBehaviour
     {
         if (PSAEnabled)
         {
-            PSAMod(Speed, MexGroundDis, UseJoySticks);
+            PSAMod(Speed, MexGroundDis);
         }
     }
 
@@ -67,17 +68,70 @@ public class Main : MonoBehaviour
     {
         GUILayout.Label("Enable PSA");
         PSAEnabled = GUILayout.Toggle(PSAEnabled, "Enable PSA");
-        GUILayout.Label("Set Joy Sticks");
-        UseJoySticks = GUILayout.Toggle(UseJoySticks,
-        UseJoySticks ? "Right Stick" : "Left Stick");
         GUILayout.Space(5f);
         Speed = GUILayout.HorizontalSlider(Speed, 1f, 12f, SStyle, STHStyle);
         GUILayout.Label($"Speed {Speed:F1}");
         MexGroundDis = GUILayout.HorizontalSlider(MexGroundDis, 0.1f, 2f, SStyle, STHStyle);
         GUILayout.Label($"Ground Dist: {MexGroundDis:F2}");
+        GUILayout.Space(5f);
+        GUILayout.Label("Set Input:");
+
+        int oldIndex = InputSelector.SelectedIndex;
+
+        InputSelector.SelectedIndex = MenuHelper.Dropdown(
+            "psa_input",
+            InputSelector.InputNames,
+            InputSelector.SelectedIndex,
+            GUILayout.Width(200)
+        );
+        dropdownOpen = oldIndex != InputSelector.SelectedIndex;
+        GUILayout.Space(5f);
+        GUILayout.Label("Presets:");
+
+        if (GUILayout.Button("Legit", BStyle))
+        {
+            Speed = 4.5f;
+            MexGroundDis = 0.6f;
+        }
+
+        if (GUILayout.Button("Comp", BStyle))
+        {
+            Speed = 6.5f;
+            MexGroundDis = 0.8f;
+        }
+
+        if (GUILayout.Button("Speed Boost", BStyle))
+        {
+            Speed = 9.5f;
+            MexGroundDis = 1.0f;
+        }
+
+        if (GUILayout.Button("Ice", BStyle))
+        {
+            Speed = 7.5f;
+            MexGroundDis = 0.2f;
+        }
+
+        if (GUILayout.Button("Air Control", BStyle))
+        {
+            Speed = 8.5f;
+            MexGroundDis = 0.4f;
+        }
+
+        if (GUILayout.Button("Random", BStyle))
+        {
+            Speed = UnityEngine.Random.Range(2f, 12f);
+            MexGroundDis = UnityEngine.Random.Range(0.1f, 1.5f);
+        }
+
+        if (GUILayout.Button("Reset", BStyle))
+        {
+            Speed = 3f;
+            MexGroundDis = 0.5f;
+        }
     }
 
-    private void PSAMod(float speed, float maxGroundDist, bool useRightStick)
+    private void PSAMod(float speed, float maxGroundDist)
     {
         if (GTPlayer.Instance == null || GTPlayer.Instance.bodyCollider == null) return;
         RaycastHit hit;
@@ -94,9 +148,9 @@ public class Main : MonoBehaviour
             float playerY = GTPlayer.Instance.bodyCollider.bounds.min.y;
             grounded = (playerY - groundY) <= maxGroundDist;
         }
-        Vector2 input = useRightStick
-            ? ControllerInputPoller.instance.rightControllerPrimary2DAxis
-            : ControllerInputPoller.instance.leftControllerPrimary2DAxis;
+
+        Vector2 input = InputSelector.Axis;
+
         if (input.magnitude < 0.05f)
         {
             velocity = Vector3.Lerp(velocity, Vector3.zero, 6f * Time.deltaTime);
