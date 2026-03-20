@@ -126,8 +126,8 @@ public class Main : MonoBehaviour
 
         if (GUILayout.Button("Reset", BStyle))
         {
-            Speed = 3f;
-            MexGroundDis = 0.5f;
+            Speed = 1f;
+            MexGroundDis = 0.1f;
         }
     }
 
